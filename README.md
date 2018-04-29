@@ -3,7 +3,7 @@ A simple phyton program for genome assemble.
 
 ## Getting Started
 
-This tool allows you to assemble genomes and visualize De Bruin Graph in different ways and formats
+This tool allows you to assemble genomes and visualize De Bruin Graph in different types and formats.
 
 ### Prerequisites
 
@@ -20,7 +20,7 @@ To install this tool clone this repository to your PC.
 ## Running and using tool
 
 Using this tool is not complicted. After downloading repository launch terminal and enter this repository or run programm using absolute path to .py file.
-Use this following to execute tool:
+Use this following command to execute tool:
 ```
 ~$  python De_Brujin.py -sq test.fasta -ks 15 -g f -d p -gi pd -o testgraph 
 ```
@@ -32,7 +32,7 @@ Information about flags:
 -gi graph output format: pn for png; pd for pdf; sv for svg (pd for default)
 -o output name
 
-Output format: Graph in dot format amd in png/pdf/svg format.
+Output format: Graph in dot format and in png/pdf/svg format.
 
 ## Author
 
