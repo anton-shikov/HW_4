@@ -22,17 +22,21 @@ To install this tool clone this repository to your PC.
 Using this tool is not complicted. After downloading repository launch terminal and enter this repository or run programm using absolute path to .py file.
 Use this following command to execute tool:
 ```
-~$  python De_Brujin.py -sq test.fasta -ks 15 -g f -d p -gi pd -o testgraph 
+~$ python De_Brujin.py -sq hw_4_5_dataset.fasta -ks 55 -g a -d p -gi pd -o hw_4_5_dataset_graph -O HW4-5_contigs.fasta -i 5 -t 2
 ```
 Information about flags:  
 -sq input sequence in fasta format  
--ks the size of k-mer (3 for default)
--g graph visualization type: f for full; a for abridged (f for default) 
--d DNA-strand for analysis: p for (+)-strand; m for (-)-strand (p for default)
--gi graph output format: pn for png; pd for pdf; sv for svg (pd for default)
--o output name
+-ks the size of k-mer (3 for default)  
+-g graph visualization type: f for full; a for abridged (f for default)  
+-d DNA-strand for analysis: p for (+)-strand; m for (-)-strand (p for default)  
+-gi graph output format: pn for png; pd for pdf; sv for svg (pd for default)  
+-o graph output name  
+-O contigs output name
+-i number of iteration for graph compressing\cutting tails  
+-t coverage threshold for cutting tails  
 
-Output format: Graph in dot format and in png/pdf/svg format.
+
+Output format: Graph in dot format and in png/pdf/svg format, contigs in fasta format.
 
 ## Author
 
