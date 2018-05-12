@@ -6,6 +6,8 @@ Created on Fri Apr 27 16:06:51 2018
 """
 
 from Bio import SeqIO
+from Bio.SeqRecord import SeqRecord
+from Bio.Seq import Seq
 from collections import defaultdict
 from graphviz import Digraph
 import argparse
@@ -89,7 +91,47 @@ class Graph:
         elif form == 'sv':
             dot.format = 'svg'
         dot.render('{}'.format(output), view=True)
+        
+    def merge (self, vertex, prev_vertex, after_vertex):
+        self.prev_vertex,self.after_vertex =  prev_vertex,after_vertex
+        self.vertices[self.prev_vertex].out_edges[self.after_vertex], self.vertices[self.after_vertex].in_edges[self.prev_vertex] = [Edge(self.prev_vertex, self.after_vertex)],[Edge(self.prev_vertex, self.after_vertex)]
+        
+        self.new_seq = self.vertices[vertex].in_edges[self.prev_vertex][0].seq + self.vertices[self.after_vertex].in_edges[vertex][0].seq[self.k:]
+        self.vertices[self.prev_vertex].out_edges[self.after_vertex][0].seq, self.vertices[self.after_vertex].in_edges[self.prev_vertex][0].seq = self.new_seq,self.new_seq
+        
+        self.new_cov = (self.vertices[vertex].out_edges[self.after_vertex][0].coverage * (len(self.vertices[vertex].out_edges[self.after_vertex][0].seq) - self.k + 1) + self.vertices[vertex].in_edges[self.prev_vertex][0].coverage * (len(self.vertices[vertex].in_edges[self.prev_vertex][0].seq) - self.k + 1) - self.vertices[vertex].coverage) / (len(self.vertices[self.prev_vertex].out_edges[self.after_vertex][0].seq) - self.k + 1)
+        self.vertices[self.prev_vertex].out_edges[self.after_vertex][0].coverage, self.vertices[self.after_vertex].in_edges[self.prev_vertex][0].coverage = self.new_cov, self.new_cov 
+        
+        del self.vertices[vertex]
+        del self.vertices[self.prev_vertex].out_edges[vertex]
+        del self.vertices[self.after_vertex].in_edges[vertex]
+       
+    def compress(self):
+        self.to_delete = [vertex for vertex in self.vertices.keys() if (len(self.vertices[vertex].out_edges.keys()) == 1) and (len(self.vertices[vertex].in_edges.keys()) == 1)]
+        for vertex in self.to_delete: 
+            prev_vertex, after_vertex = list(self.vertices[vertex].in_edges.keys())[0],list(self.vertices[vertex].out_edges.keys())[0]
+            self.merge(vertex, prev_vertex, after_vertex)
+    def cut_tails(self, lim):
+        self.to_cut = [vertex for vertex in self.vertices.keys() if ((len(self.vertices[vertex].out_edges.keys()) == 0) and (len(self.vertices[vertex].in_edges.keys()) == 1)) or ((len(self.vertices[vertex].out_edges.keys()) == 1) and (len(self.vertices[vertex].in_edges.keys()) == 0)) or ((len(self.vertices[vertex].out_edges.keys()) == 0) and (len(self.vertices[vertex].in_edges.keys()) == 0))]
+        for vertex in self.to_cut: 
+            if self.vertices[vertex].coverage <= lim:
+                if len(self.vertices[vertex].out_edges.keys()) == 1:
+                    self.vertices[list(self.vertices[vertex].out_edges.keys())[0]].in_edges.pop(vertex)
+                if len(self.vertices[vertex].in_edges.keys()) == 1:
+                    self.vertices[list(self.vertices[vertex].in_edges.keys())[0]].out_edges.pop(vertex)
+                del self.vertices[vertex]    
+                
+    def get_contigs(self, out):
+        i=0
+        contigs = []
+        for vertex in self.vertices.keys():
+            for out_vertex in self.vertices[vertex].out_edges.keys():
+                contigs.append(SeqRecord(Seq(self.vertices[vertex].out_edges[out_vertex][0].seq), id="contig {}".format(i)))
+                i+=1
+        SeqIO.write(contigs, out, "fasta")
 
+        
+               
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='De_Bruijn_Graph visualization')
     parser.add_argument('-sq', '--sequence', help='Please enter sequence file', type=str)
@@ -98,13 +140,16 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--strand', help='Please enter DNA strand: p for (+)-strand; m for (-)-strand', default='p', type=str)
     parser.add_argument('-gi', '--graphimage', help='Please enter graph output: pn for png; pd for pdf; sv for svg', default='pd', type=str)
     parser.add_argument('-o', '--graphout', help='Please enter output file name', type=str)
-    
+    parser.add_argument('-O', '--contigsout', help='Please enter contigs file name', type=str)
+    parser.add_argument('-i', '--iterations', help='Please enter number of iterations for graph compression', type=int)  
+    parser.add_argument('-t', '--threshold', help='Please enter coverage theshold for cutting', type=int)  
+       
     args = parser.parse_args()
     
-    sq, ks, g, d, gi, o  = args.sequence, args.kmersize, args.graphtype, args.strand,  args.graphimage, args.graphout
+    sq, ks, g, d, gi, o, O, t, i  = args.sequence, args.kmersize, args.graphtype, args.strand,  args.graphimage, args.graphout, args.contigsout,  args.threshold, args.iterations
 
     my_graph = Graph(ks)
-    
+
     if d=='p':
         with open(sq, "r") as handle:
             for record in SeqIO.parse(handle, "fasta"):
@@ -113,5 +158,14 @@ if __name__ == '__main__':
         with open(sq, "r") as handle:
             for record in SeqIO.parse(handle, "fasta"):
                 my_graph.add_read(str(record.reverse_complement().seq) )
-    my_graph.calc_init_edge_coverage()         
-    my_graph.graph_vis(g, gi, o)
+    
+    if i is not None:
+        for k in range (i):
+            my_graph.compress()
+            my_graph.cut_tails(t)
+        
+    my_graph.calc_init_edge_coverage()  
+    if O is not None:  
+        my_graph.get_contigs(O)
+    if o is not None and g is not None and gi is not None:
+        my_graph.graph_vis(g, gi, o)
