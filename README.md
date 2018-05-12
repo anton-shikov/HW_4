@@ -38,6 +38,8 @@ Information about flags:
 
 Output format: Graph in dot format and in png/pdf/svg format, contigs in fasta format.
 
+By the way, blasting contigs has shown that reads for homework were from Hepatitis B virus
+
 ## Author
 
 * **Anton Shikov** - *Initial work* - [anton-shikov](https://github.com/anton-shikov)
